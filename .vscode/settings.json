@@ -1,5 +1,6 @@
 {
     "C_Cpp.clang_format_fallbackStyle": "LLVM",
     "C_Cpp.clang_format_path": "${LLVM_DIR}/bin/clang-format",
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "editor.detectIndentation": true
 }

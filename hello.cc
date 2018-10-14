@@ -1,14 +1,17 @@
 #include "clang/Frontend/FrontendActions.h"
+#include "clang/Tooling/ArgumentsAdjusters.h"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 #include "llvm/Support/CommandLine.h"
+
+#include "config.hh"
 
 using namespace clang::tooling;
 using namespace llvm;
 
 // Apply a custom category to all command-line options so that they are the
 // only ones displayed.
-static cl::OptionCategory MyToolCategory("my-tool options");
+static cl::OptionCategory MyToolCategory("doclint options");
 
 // CommonOptionsParser declares HelpMessage with a description of the common
 // command-line options related to the compilation database and input files.
@@ -22,5 +25,9 @@ int main(int argc, const char **argv) {
   CommonOptionsParser OptionsParser(argc, argv, MyToolCategory);
   ClangTool Tool(OptionsParser.getCompilations(),
                  OptionsParser.getSourcePathList());
+
+  Tool.appendArgumentsAdjuster(
+      getInsertArgumentAdjuster("-resource-dir=" DOCLINT_RESOURCE_DIR));
+
   return Tool.run(newFrontendActionFactory<clang::SyntaxOnlyAction>().get());
 }

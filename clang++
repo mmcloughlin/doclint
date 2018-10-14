@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import json
+import subprocess
+
+
+COMPILE_COMMANDS_FILENAME = 'compile_commands.json'
+
+
+def llvm_bin_path(name):
+    return os.path.join(os.environ['LLVM_DIR'], 'bin', name)
+
+
+def modify_compile_command(argv):
+    args = list(argv)
+    prog = os.path.basename(args[0])
+    args[0] = llvm_bin_path(prog)
+    return args
+
+
+def find_source_file(argv):
+    source_files = [n for n in argv if n.endswith('.cc')]
+    assert len(source_files) == 1
+    return source_files[0]
+
+
+def load_compile_commands():
+    if not os.path.exists(COMPILE_COMMANDS_FILENAME):
+        return []
+    with open(COMPILE_COMMANDS_FILENAME) as f:
+        return json.load(f)
+
+
+def write_compile_commands(cmds):
+    with open(COMPILE_COMMANDS_FILENAME, 'w') as f:
+        return json.dump(cmds, f, indent=4)
+
+
+def update_compile_commands(args):
+    source_file = find_source_file(args)
+    cmds = load_compile_commands()
+    cmds = [cmd for cmd in cmds if cmd['file'] != source_file]
+    cmds.append(dict(
+        directory=os.getcwd(),
+        arguments=args,
+        file=source_file,
+    ))
+    write_compile_commands(cmds)
+
+
+def main():
+    args = modify_compile_command(sys.argv)
+    update_compile_commands(args)
+    os.execv(args[0], args)
+
+
+if __name__ == '__main__':
+    main()
