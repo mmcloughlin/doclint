@@ -22,5 +22,8 @@ config.hh: config.py
 example: example.cc
 	$(CXX) -o $@ $^
 
+%.ast: %.cc
+	$(LLVM_BIN)/clang++ -Xclang -ast-dump -fsyntax-only $< > $@
+
 clean:
 	$(RM) $(progs)

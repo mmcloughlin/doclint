@@ -1,6 +1,7 @@
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
+#include "clang/Basic/Diagnostic.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendActions.h"
 #include "clang/Tooling/ArgumentsAdjusters.h"
@@ -28,27 +29,38 @@ static cl::extrahelp MoreHelp("\nMore help text...\n");
 
 class DocLintVisitor : public RecursiveASTVisitor<DocLintVisitor> {
 public:
-  explicit DocLintVisitor(ASTContext *Context) : Context(Context) {}
+  explicit DocLintVisitor(ASTContext *Context) : Context(Context) {
+    DiagID = Context->getDiagnostics().getCustomDiagID(
+        clang::DiagnosticsEngine::Error, "missing comment");
+  }
 
   bool VisitFunctionDecl(FunctionDecl *Declaration) {
-    outs() << Declaration->getQualifiedNameAsString();
-
     auto *comment = Context->getCommentForDecl(Declaration, nullptr);
-    FullSourceLoc FullLocation =
-        Context->getFullLoc(Declaration->getBeginLoc());
+    if (comment != nullptr || !shouldHaveComment(Declaration)) {
+      return true;
+    }
 
-    outs() << "\thas_comment=" << (comment != nullptr);
-    outs() << "\texternally_visible=" << Declaration->isExternallyVisible();
-    outs() << "\taccess=" << Declaration->getAccess();
-    outs() << "\tis_module_private=" << Declaration->isModulePrivate();
-    outs() << "\tin_system_header=" << FullLocation.isInSystemHeader();
-    outs() << '\n';
+    // outs() << Declaration->getQualifiedNameAsString();
+    auto &DE = Context->getDiagnostics();
+    DE.Report(Declaration->getLocation(), DiagID);
 
     return true;
   }
 
 private:
+  bool shouldHaveComment(FunctionDecl *Declaration) {
+    auto Access = Declaration->getAccess();
+    FullSourceLoc FullLocation =
+        Context->getFullLoc(Declaration->getBeginLoc());
+
+    return !FullLocation.isInSystemHeader() &&
+           Declaration->isExternallyVisible() &&
+           (Access == AS_public || Access == AS_none) &&
+           !Declaration->isTrivial();
+  }
+
   ASTContext *Context;
+  unsigned DiagID;
 };
 
 class DocLintConsumer : public clang::ASTConsumer {
