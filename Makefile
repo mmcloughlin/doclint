@@ -12,7 +12,7 @@ CXXFLAGS = `${CFG} --cxxflags`
 LDFLAGS = `${CFG} --ldflags`
 LDLIBS = `${CFG} --libs --system-libs` $(addprefix -l, $(CLANGLIBS))
 
-progs=hello example
+progs=doclint example
 
 all: $(progs)
 
