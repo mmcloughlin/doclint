@@ -34,10 +34,14 @@ public:
     outs() << Declaration->getQualifiedNameAsString();
 
     auto *comment = Context->getCommentForDecl(Declaration, nullptr);
+    FullSourceLoc FullLocation =
+        Context->getFullLoc(Declaration->getBeginLoc());
+
     outs() << "\thas_comment=" << (comment != nullptr);
-
     outs() << "\texternally_visible=" << Declaration->isExternallyVisible();
-
+    outs() << "\taccess=" << Declaration->getAccess();
+    outs() << "\tis_module_private=" << Declaration->isModulePrivate();
+    outs() << "\tin_system_header=" << FullLocation.isInSystemHeader();
     outs() << '\n';
 
     return true;
